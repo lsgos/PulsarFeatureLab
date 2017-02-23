@@ -25,19 +25,12 @@ import itertools
 import Utilities, Candidate
 
 
+#Helper functions defined outside the class in order to allow for mutliprocessing: 
+#multiprocessing pickles objects, and this doesn't work well with classes. 
 
-def featureMeta(features):
+def featureMeta(candidate,features):
     """
-    Appends candidate features to a list held by this object. This stores 
-    each feature in memory, as opposed to writing them out to a file each time.
-    
-    Parameters:
-    
-    candidate  -    The name of the candidate the features belong to.
-    features   -    A float array of candidate features.
-    
-    Return:
-    N/A
+    Take a feature and 
     """
     
     # Join features into single comma separated line.
@@ -49,7 +42,7 @@ def featureMeta(features):
     
 # ****************************************************************************************************
 
-def featureNoMeta(features):
+def featureNoMeta(candidate,features):
     """
     Appends candidate features to a list held by this object. This records 
     each feature in memory as opposed to writing them out to a file each time.
@@ -79,19 +72,19 @@ def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
     to each worker
     """
     try:
-        c = Candidate.Candidate(name,str(path+cand))
+        c = Candidate.Candidate(name,path)
         features = c.getFeatures(feature_type, candidate_type, verbose)
         if (arff and feature_type > 0 and feature_type < 7):
             features.append('?')
         if meta:
-            return featureMeta(features)
+            return featureMeta(path,features)
         else:
-            return featureNoMeta(features)
+            return featureNoMeta(path,features)
     except:
         """catch all exceptions, printing to stdout"""
         print "\tError reading candidate data :\n\t", sys.exc_info()[0]
         #print self.format_exception(e) this function doesn't seem to exist? 
-        print "\t",cand, " did not have features generated."
+        print "\t",name, " did not have features generated."
         return None
 
 # ****************************************************************************************************
@@ -146,7 +139,7 @@ class DataProcessor(Utilities.Utilities):
                 for filename in fnmatch.filter(filenames, filetype):
                     cand = os.path.join(root, filename)
                     #yield all the arguments that need to be passed into the worker
-                    yield filename,os.path.join(root, filename), feature_type, candidate_type, verbose, meta, arff 
+                    yield cand,os.path.join(directory,cand), feature_type, candidate_type, verbose, meta, arff 
                     
                     # If the file does not have the expected suffix (file extension), skip to the next.  
                     if(cand.endswith(filetype.replace("*",""))==False):
