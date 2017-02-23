@@ -26,7 +26,7 @@ import Utilities, Candidate
 
 
 #Helper functions defined outside the class in order to allow for mutliprocessing: 
-#multiprocessing pickles objects, and this doesn't work well with classes. 
+#multiprocessing pickles objects, and this doesn't work well with classes.
 
 def featureMeta(candidate,features):
     """
