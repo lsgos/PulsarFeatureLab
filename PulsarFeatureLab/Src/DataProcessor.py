@@ -233,7 +233,7 @@ class DataProcessor(Utilities.Utilities):
 
         #dispatch the worker process to the worker pool, feeding in the filenames generated from the generator
         #used unordered_map because we don't care what order the candidates are processed in
-        orders = self.generate_orders(directory,fileTypeRegexes, meta, feature_type, candidate_type, verbose)
+        orders = self.generate_orders(directory,fileTypeRegexes, feature_type,candidate_type,verbose,meta,arff)
         for feature in worker_pool.imap_unordered(worker, orders):
             if feature is not None:
                 self.featureStore.append(feature)
