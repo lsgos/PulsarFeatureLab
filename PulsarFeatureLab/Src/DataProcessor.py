@@ -69,7 +69,7 @@ def featureNoMeta(features):
     entry3 = entry2.replace("inf","0") # Remove infinity values since these cause error for ML tools like WEKA
     return entry3
 
-def generate_filenames(self, directory, fileTypeRegexes):
+def generate_filenames(directory, fileTypeRegexes):
         """
         A generator that yields the paths of files matching the given regex and thier names, 
         in the format (filename,full-path-to-file)
