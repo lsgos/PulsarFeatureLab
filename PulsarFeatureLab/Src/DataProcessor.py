@@ -69,6 +69,24 @@ def featureNoMeta(features):
     entry3 = entry2.replace("inf","0") # Remove infinity values since these cause error for ML tools like WEKA
     return entry3
 
+def generate_filenames(self, directory, fileTypeRegexes):
+        """
+        A generator that yields the paths of files matching the given regex and thier names, 
+        in the format (filename,full-path-to-file)
+        """
+        for filetype in fileTypeRegexes:
+        # Loop through the specified directory
+            for root, subFolders, filenames in os.walk(directory):
+                
+                # If the file type matches one of those this program recognises
+                for filename in fnmatch.filter(filenames, filetype):
+                    
+                    yield filename,os.path.join(root, filename) # Gets full path to the candidate.
+                    
+                    # If the file does not have the expected suffix (file extension), skip to the next.  
+                    if(cand.endswith(filetype.replace("*",""))==False):
+                        continue
+
 # ****************************************************************************************************
 #
 # CLASS DEFINITION
@@ -107,23 +125,6 @@ class DataProcessor(Utilities.Utilities):
  
     
     # ****************************************************************************************************
-    def generate_filenames(self, directory, fileTypeRegexes):
-        """
-        A generator that yields the paths of files matching the given regex and thier names, 
-        in the format (filename,full-path-to-file)
-        """
-        for filetype in fileTypeRegexes:
-        # Loop through the specified directory
-            for root, subFolders, filenames in os.walk(directory):
-                
-                # If the file type matches one of those this program recognises
-                for filename in fnmatch.filter(filenames, filetype):
-                    
-                    yield filename,os.path.join(root, filename) # Gets full path to the candidate.
-                    
-                    # If the file does not have the expected suffix (file extension), skip to the next.  
-                    if(cand.endswith(filetype.replace("*",""))==False):
-                        continue
 
 
     def process(self,directory,output,feature_type,candidate_type,verbose,meta,arff):
@@ -227,7 +228,7 @@ class DataProcessor(Utilities.Utilities):
 
         #dispatch the worker process to the worker pool, feeding in the filenames generated from the generator
         #used unordered_map because we don't care what order the candidates are processed in
-        filename_gen = self.generate_filenames(directory,fileTypeRegexes)
+        filename_gen = generate_filenames(directory,fileTypeRegexes)
         for feature in worker_pool.imap_unordered(worker, filename_gen):
             if feature is not None:
                 self.featureStore.append(feature)
