@@ -19,6 +19,7 @@
 import sys,os,fnmatch,datetime
 
 import multiprocessing
+import itertools
 
 # Custom file Imports:
 import Utilities, Candidate
@@ -69,23 +70,29 @@ def featureNoMeta(features):
     entry3 = entry2.replace("inf","0") # Remove infinity values since these cause error for ML tools like WEKA
     return entry3
 
-def generate_filenames(directory, fileTypeRegexes):
-        """
-        A generator that yields the paths of files matching the given regex and thier names, 
-        in the format (filename,full-path-to-file)
-        """
-        for filetype in fileTypeRegexes:
-        # Loop through the specified directory
-            for root, subFolders, filenames in os.walk(directory):
-                
-                # If the file type matches one of those this program recognises
-                for filename in fnmatch.filter(filenames, filetype):
-                    
-                    yield filename,os.path.join(root, filename) # Gets full path to the candidate.
-                    
-                    # If the file does not have the expected suffix (file extension), skip to the next.  
-                    if(cand.endswith(filetype.replace("*",""))==False):
-                        continue
+def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
+    """
+    Creates a candidate object to perform the processing. It's execution is controlled 
+    by the generate_orders function of the DataProcessor class. It is defined outside the 
+    class to enable multiprocessing, since the default implementation is unable to pickle 
+    classes and closure-type functions, neccesitating passing in a large number of options 
+    to each worker
+    """
+    try:
+        c = Candidate.Candidate(name,str(path+cand))
+        features = c.getFeatures(feature_type, candidate_type, verbose)
+        if (arff and feature_type > 0 and feature_type < 7):
+            features.append('?')
+        if meta:
+            return featureMeta(features)
+        else:
+            return featureNoMeta(features)
+    except:
+        """catch all exceptions, printing to stdout"""
+        print "\tError reading candidate data :\n\t", sys.exc_info()[0]
+        #print self.format_exception(e) this function doesn't seem to exist? 
+        print "\t",cand, " did not have features generated."
+        return None
 
 # ****************************************************************************************************
 #
@@ -126,6 +133,24 @@ class DataProcessor(Utilities.Utilities):
     
     # ****************************************************************************************************
 
+    def generate_orders(self, directory, fileTypeRegexes, feature_type,candidate_type,verbose,meta,arff):
+        """
+        A generator that yields the paths of files matching the given regex and thier names, 
+        in the format (filename,full-path-to-file)
+        """
+        for filetype in fileTypeRegexes:
+        # Loop through the specified directory
+            for root, subFolders, filenames in os.walk(directory):
+                
+                # If the file type matches one of those this program recognises
+                for filename in fnmatch.filter(filenames, filetype):
+                    
+                    #yield all the arguments that need to be passed into the worker
+                    yield filename,os.path.join(root, filename), feature_type, candidate_type, verbose, meta, arff 
+                    
+                    # If the file does not have the expected suffix (file extension), skip to the next.  
+                    if(cand.endswith(filetype.replace("*",""))==False):
+                        continue
 
     def process(self,directory,output,feature_type,candidate_type,verbose,meta,arff):
         """
@@ -204,32 +229,12 @@ class DataProcessor(Utilities.Utilities):
         
         worker_pool = multiprocessing.Pool(multiprocessing.cpu_count()) #try to utilize all avaliable cores
 
-        def worker((name,path)):
-            """
-            This function processes each file, returning the features as a list. It closes over 
-            various neccesary environment variables, preventing them being needed to be passed in 
-            explicitly every time
-            """
-            try:
-                c = Candidate.Candidate(name,str(path+cand))
-                features = c.getFeatures(feature_type, candidate_type, verbose)
-                if (arff and feature_type > 0 and feature_type < 7):
-                    features.append('?')
-                if meta:
-                    return featureMeta(features)
-                else:
-                    return featureNoMeta(features)
-            except:
-                """catch all exceptions, printing to stdout"""
-                print "\tError reading candidate data :\n\t", sys.exc_info()[0]
-                #print self.format_exception(e) this function doesn't seem to exist? 
-                print "\t",cand, " did not have features generated."
-                return None
+ 
 
         #dispatch the worker process to the worker pool, feeding in the filenames generated from the generator
         #used unordered_map because we don't care what order the candidates are processed in
-        filename_gen = generate_filenames(directory,fileTypeRegexes)
-        for feature in worker_pool.imap_unordered(worker, filename_gen):
+        orders = self.generate_orders(directory,fileTypeRegexes, meta, feature_type, candidate_type, verbose)
+        for feature in worker_pool.imap_unordered(worker, orders):
             if feature is not None:
                 self.featureStore.append(feature)
                 successes += 1
