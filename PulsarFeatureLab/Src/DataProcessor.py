@@ -144,7 +144,7 @@ class DataProcessor(Utilities.Utilities):
                 
                 # If the file type matches one of those this program recognises
                 for filename in fnmatch.filter(filenames, filetype):
-                    
+                    cand = os.path.join(root, filename)
                     #yield all the arguments that need to be passed into the worker
                     yield filename,os.path.join(root, filename), feature_type, candidate_type, verbose, meta, arff 
                     
