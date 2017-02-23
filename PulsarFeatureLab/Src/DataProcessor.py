@@ -200,7 +200,7 @@ class DataProcessor(Utilities.Utilities):
         start = datetime.datetime.now() # Used to measure feature generation time.
         
         #spawn a pool of workers to process the individual files 
-
+        
         worker_pool = multiprocessing.Pool(multiprocessing.cpu_count()) #try to utilize all avaliable cores
 
         def worker((name,path)):
@@ -227,7 +227,8 @@ class DataProcessor(Utilities.Utilities):
 
         #dispatch the worker process to the worker pool, feeding in the filenames generated from the generator
         #used unordered_map because we don't care what order the candidates are processed in
-        for feature in worker_pool.imap_unordered(worker, self.generate_filenames(directory, fileTypeRegexes) ):
+        filename_gen = self.generate_filenames(directory,fileTypeRegexes)
+        for feature in worker_pool.imap_unordered(worker, filename_gen):
             if feature is not None:
                 self.featureStore.append(feature)
                 successes += 1
