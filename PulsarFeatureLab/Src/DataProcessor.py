@@ -29,9 +29,16 @@ import Utilities, Candidate
 
 def featureMeta(candidate,features):
     """
-    Take a feature and 
-    """
+    Returns a string of features with the metadata attached. Strips bad data fields from the list
     
+    Parameters:
+    
+    candidate  -    The name of the candidate the features belong to.
+    features   -    A float array of candidate features.
+    
+    Return:
+    modified version of the list
+    """ 
     # Join features into single comma separated line.
     allFeatures =  str(",".join(map(str, features)))
     entry1 = allFeatures + ",%" + candidate
@@ -43,8 +50,7 @@ def featureMeta(candidate,features):
 
 def featureNoMeta(candidate,features):
     """
-    Appends candidate features to a list held by this object. This records 
-    each feature in memory as opposed to writing them out to a file each time.
+    Returns a string of features without the metadata attached. Strips bad data fields from the list
     
     Parameters:
     
@@ -52,7 +58,7 @@ def featureNoMeta(candidate,features):
     features   -    A float array of candidate features.
     
     Return:
-    N/A
+    modified version of the list
     """
     
     # Join features into single comma separated line.
@@ -80,8 +86,7 @@ def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
         else:
             return featureNoMeta(path,features),None, name
     except Exception as e:
-        """catch all exceptions, printing to stdout"""
-
+        #return exception information to the main thread
         return None,e, name
 
 # ****************************************************************************************************
@@ -219,7 +224,7 @@ class DataProcessor(Utilities.Utilities):
         
         worker_pool = multiprocessing.Pool(multiprocessing.cpu_count()) #try to utilize all avaliable cores
 
-        #created a generator that feeds the filenames of the candidates to process and the behaviour options to 
+        #create a generator that feeds the filenames of the candidates to process and the behaviour options to 
         #the processor workers
         orders = self.generate_orders(directory,fileTypeRegexes, feature_type,candidate_type,verbose,meta,arff)
 
