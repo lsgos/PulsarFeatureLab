@@ -236,8 +236,8 @@ class DataProcessor(Utilities.Utilities):
                 #worker hit an exception: display the kind of exception and the file name. 
                 #Unfortunatly, multiprocessing makes it harder to give a better traceback
                 print "\tError reading candidate data :\n\t" 
-		        print "\tEncountered exception: "
-		        print "\t",ex
+                print "\tEncountered exception: "
+                print "\t",ex
                 print "\t",name, " did not have features generated."
                 failures += 1 
                 
