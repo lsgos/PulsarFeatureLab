@@ -82,7 +82,7 @@ def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
             return featureMeta(path,features),None, name
         else:
             return featureNoMeta(path,features),None, name
-    except:
+    except Exception as e:
         """catch all exceptions, printing to stdout"""
 
         return None,e, name
@@ -228,14 +228,16 @@ class DataProcessor(Utilities.Utilities):
 
         #dispatch the processes to the worker pool. Use imap_unordered because it doesn't matter what order 
         #we process the files in
-        for feature,exception,name in worker_pool.imap_unordered(worker, orders):
+        for feature,ex,name in worker_pool.imap_unordered(worker, orders):
             if feature is not None:
                 self.featureStore.append(feature)
                 successes += 1
             else:
-                #process hit an exception: don't throw, but display its information
-                print "\tError reading candidate data :\n\t", sys.exc_info()[0]
-                print self.format_exception(exception) 
+                #worker hit an exception: display the kind of exception and the file name. 
+                #Unfortunatly, multiprocessing makes it harder to give a better traceback
+                print "\tError reading candidate data :\n\t" 
+		        print "\tEncountered exception: "
+		        print "\t",ex
                 print "\t",name, " did not have features generated."
                 failures += 1 
                 
