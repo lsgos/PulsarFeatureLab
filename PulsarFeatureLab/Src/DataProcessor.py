@@ -14,7 +14,6 @@
 **************************************************************************
  
 """
-
 # Standard library Imports:
 import sys,os,fnmatch,datetime
 
@@ -70,6 +69,9 @@ def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
     class to enable multiprocessing, since the default implementation is unable to pickle 
     classes and closure-type functions, neccesitating passing in a large number of options 
     to each worker
+    If succesful, returns the feature and None,None. If the worker hits an exception, 
+    return the exception information and the name of the candidate to the main thread 
+    so it can be printed nicely using the Utility class
     """
     try:
         c = Candidate.Candidate(name,path)
@@ -77,15 +79,13 @@ def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
         if (arff and feature_type > 0 and feature_type < 7):
             features.append('?')
         if meta:
-            return featureMeta(path,features)
+            return featureMeta(path,features),None, name
         else:
-            return featureNoMeta(path,features)
+            return featureNoMeta(path,features),None, name
     except:
         """catch all exceptions, printing to stdout"""
-        print "\tError reading candidate data :\n\t", sys.exc_info()[0]
-        #print self.format_exception(e) this function doesn't seem to exist? 
-        print "\t",name, " did not have features generated."
-        return None
+
+        return None,e, name
 
 # ****************************************************************************************************
 #
@@ -128,8 +128,8 @@ class DataProcessor(Utilities.Utilities):
 
     def generate_orders(self, directory, fileTypeRegexes, feature_type,candidate_type,verbose,meta,arff):
         """
-        A generator that yields the paths of files matching the given regex and thier names, 
-        in the format (filename,full-path-to-file)
+        Yields the parameters to be dispatched to the subprocess workers: the filename generated from 
+        walking the directory, and the behaviour parameters (feature_type, candidate_type, verbose, meta, arff)
         """
         for filetype in fileTypeRegexes:
         # Loop through the specified directory
@@ -222,17 +222,21 @@ class DataProcessor(Utilities.Utilities):
         
         worker_pool = multiprocessing.Pool(multiprocessing.cpu_count()) #try to utilize all avaliable cores
 
- 
-
-        #dispatch the worker process to the worker pool, feeding in the filenames generated from the generator
-        #used unordered_map because we don't care what order the candidates are processed in
+        #created a generator that feeds the filenames of the candidates to process and the behaviour options to 
+        #the processor workers
         orders = self.generate_orders(directory,fileTypeRegexes, feature_type,candidate_type,verbose,meta,arff)
-        for feature in worker_pool.imap_unordered(worker, orders):
+
+        #dispatch the processes to the worker pool. Use imap_unordered because it doesn't matter what order 
+        #we process the files in
+        for feature,exception,name in worker_pool.imap_unordered(worker, orders):
             if feature is not None:
                 self.featureStore.append(feature)
                 successes += 1
             else:
-                #worker wrote to stdout already
+                #process hit an exception: don't throw, but display its information
+                print "\tError reading candidate data :\n\t", sys.exc_info()[0]
+                print self.format_exception(exception) 
+                print "\t",name, " did not have features generated."
                 failures += 1 
                 
             candidatesProcessed+=1
