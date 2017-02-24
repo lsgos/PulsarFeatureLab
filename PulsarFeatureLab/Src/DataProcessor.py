@@ -64,14 +64,11 @@ def featureNoMeta(candidate,features):
 
 def worker( (name,path,feature_type,candidate_type,verbose,meta,arff) ):
     """
-    Creates a candidate object to perform the processing. It's execution is controlled 
-    by the generate_orders function of the DataProcessor class. It is defined outside the 
-    class to enable multiprocessing, since the default implementation is unable to pickle 
-    classes and closure-type functions, neccesitating passing in a large number of options 
-    to each worker
-    If succesful, returns the feature and None,None. If the worker hits an exception, 
-    return the exception information and the name of the candidate to the main thread 
-    so it can be printed nicely using the Utility class
+    Creates a candidate object to perform the processing. If succesful, returns the feature 
+    and None,None. If the worker hits an exception,return the exception information and 
+    the name of the candidate to the main thread so it can be printed.
+
+    This needs to be defined outside the class so it can be done in parallel
     """
     try:
         c = Candidate.Candidate(name,path)
